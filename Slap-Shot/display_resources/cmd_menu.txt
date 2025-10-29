@@ -2,6 +2,6 @@
 |                                                                                                        |
 |    What would you like to do?                                                                          |
 |                                                                                                        |
-|    Press 1 to register dummy event with cloud.                                                         |                                                                              |
+|    Press 1 to register dummy event with cloud.                                                         |
 |                                                                                                        |
 +--------------------------------------------------------------------------------------------------------+
