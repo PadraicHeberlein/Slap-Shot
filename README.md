@@ -3,14 +3,14 @@ Slap-Shot is essentially a firmware manager and LoRa-to-WiFi linker for the Puck
 
 When you first open Slap-Shot, make sure that both the Hockey Stick Base Station and any Pucks you have are unplugged.
 
-> [! CAUTION]
+> [!CAUTION]
 > When prompted, the first thing you should do is update the firmware. After the firmware has been updated, you will be asked if you 
 > have any Pucks to register. At this point, this has no implementaion, so just say no. Once we know that the software here works, 
 > adding Puck registration on my end will take very little.
 
 Next, you will be asked to enter your credentials for wour local WiFi network. After a successful connection, you will get to the main menu of the program.
 
-> [! TIP]
+> [!TIP]
 > If you have trouble connecting to the WiFi, try moving closer to your router. The WiFi antenna on the base station isn't very
 > strong, and it may not be recieving a signal.
 
