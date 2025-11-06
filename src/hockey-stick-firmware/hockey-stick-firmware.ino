@@ -19,37 +19,9 @@ Preferences puck_prefs;
 
 int default_country = EUROPE;
 const char* serverUrl = "https://api.staging.eas-defense.com/register";
-
-// NTP server and timezone
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = -18000;  // EST = UTC -5 hours
-const int   daylightOffset_sec = 3600;  // DST offset
-
-String dummy = R"rawliteral({
-      "device_id": "PUCK#009",
-      "timestamp": "2025-10-23T20:26:00.000Z",
-      "latitude": -73.6631021,
-      "longitude": 42.2710511,
-      "event_type": "trigger"
-    })rawliteral";
-
-String get_datetime() {
-  if (WiFi.status() != WL_CONNECTED) {
-    while (!connect_to_wifi("cei", "?}bPd~ACaf2$"));
-  }
-
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)) {
-    char timeStr[64];
-    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
-    String datetime = String(timeStr);
-    Serial.println("Current DateTime: " + datetime);
-    return datetime;
-  } else {
-    Serial.println("Failed to get time");
-    return "";
-  }
-}
+const char* ssid = "";
+const char* pass = "";
+const char* access_token = "";
 
 bool connect_to_wifi(const char* ssid, const char* password) {
   if (WiFi.status() != WL_CONNECTED) {
@@ -59,21 +31,22 @@ bool connect_to_wifi(const char* ssid, const char* password) {
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
       delay(1000);
-      //Serial.print("Status: ");
-      //Serial.println(WiFi.status());
+      Serial.print("Status: ");
+      Serial.println(WiFi.status());
       attempts++;
     }
   }
   return WiFi.status() == WL_CONNECTED;
 }
 
-String construct_event_json_payload(String id, String timestamp, String lat, String lon) {
+String construct_json_payload(String id, float snr, float rssi, float battery, String event_type) {
   String json = "{";
-  json += "\"device_id\": \"PUCK#" + id + "\",";
-  json += "\"timestamp\": \"" + timestamp + "\",";
-  json += "\"latitude\": " + lat + ",";
-  json += "\"longitude\": " + lon + ",";
-  json += "\"event_type\": \"trigger\"";
+  json += "\"device_id\": " + id + "\",";
+  json += "\"data\": {";
+  json += "\"snr\": " + (String)snr + "\",";
+  json += "\"rssi\": " + (String)rssi + "\",";
+  json += "\"battery\": " + (String)battery +"\"}, ";
+  json += "\"event_type\": " + event_type + "\"";
   json += "}";
 
   return json;
@@ -166,16 +139,17 @@ void loop() {
 
     String cmd = (String)parsed_cmd[0];
     String arg1 = (String)parsed_cmd[1];
+    String arg2 = (String)parsed_cmd[2];
 
-    cmd.trim(); arg1.trim();
+    cmd.trim(); arg1.trim(); arg2.trim();
 
-    String node_id = arg1.substring(3, 6);
-    String timestamp = "2025-10-23T22:26:00.000Z";
-    String lat = "-73.6631021";
-    String lon = "42.2710511";
+    String node_id = arg1;
+    float snr = LoRa.packetSnr();
+    float rssi = LoRa.packetRssi();
+    float battery = arg2.toInt() / 100.0;
 
     if (cmd == "SEISMC") {
-      jsonPayload = construct_event_json_payload(node_id, timestamp, lat, lon);
+      jsonPayload = construct_json_payload(node_id, snr, rssi, battery, "trigger");
       event = true;
     }
   }
@@ -183,8 +157,7 @@ void loop() {
   if (event) {
     Serial.println("...registering event to cloud...");
     if (WiFi.status() != WL_CONNECTED) {
-      const char* ssid = puck_prefs.getString("ssid").c_str();
-      const char* pass = puck_prefs.getString("pass").c_str();
+      Serial.println(ssid);
       while (!connect_to_wifi(ssid, pass));
     }
       
@@ -208,18 +181,10 @@ void loop() {
     cmd.trim(); arg1.trim(); arg2.trim();
 
     if (cmd == "CONNECT") {
-      const char* ssid = arg1.c_str();
-      const char* pass = arg2.c_str();
-      puck_prefs.putString("ssid", ssid);
-      puck_prefs.putString("pass", pass);
       Serial.print("base station trying to connect to wifi: ");
       while (!connect_to_wifi(ssid, pass));
       Serial.print("base station is connected to wifi! ");
     } else if (cmd == "CMD") {
-      if (arg1 == "ping") {
-        Serial.println("pining cloud...");
-        register_event(dummy);
-      }
       if (arg1 == "api_key") {
         puck_prefs.putString("api_key", arg2);
       }
